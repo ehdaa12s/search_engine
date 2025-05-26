@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SearchResult {
   title: string;
@@ -19,6 +20,7 @@ const InternetSearch: React.FC = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
+  const [totalResults, setTotalResults] = useState(0);
   const { toast } = useToast();
 
   const handleSearch = async () => {
@@ -28,44 +30,35 @@ const InternetSearch: React.FC = () => {
     const startTime = Date.now();
     
     try {
-      // Simulate API search - In real implementation, this would call a search API
-      // You would typically use Google Custom Search API, Bing Search API, or similar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Starting real internet search for:', query);
       
-      // Mock results for demonstration
-      const mockResults: SearchResult[] = [
-        {
-          title: `${query} - Wikipedia`,
-          url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
-          snippet: `Learn about ${query} from the world's leading encyclopedia. Comprehensive information, references, and related topics.`,
-          displayUrl: 'en.wikipedia.org'
-        },
-        {
-          title: `${query} News and Updates`,
-          url: `https://news.example.com/${encodeURIComponent(query)}`,
-          snippet: `Latest news and updates about ${query}. Stay informed with real-time information and expert analysis.`,
-          displayUrl: 'news.example.com'
-        },
-        {
-          title: `${query} - Official Website`,
-          url: `https://${query.toLowerCase().replace(/\s+/g, '')}.com`,
-          snippet: `Official website for ${query}. Get authentic information, resources, and services directly from the source.`,
-          displayUrl: `${query.toLowerCase().replace(/\s+/g, '')}.com`
-        }
-      ];
-      
-      setResults(mockResults);
-      setSearchTime(Date.now() - startTime);
+      const { data, error } = await supabase.functions.invoke('internet-search', {
+        body: { query: query.trim() }
+      });
+
+      if (error) {
+        console.error('Search function error:', error);
+        throw new Error(error.message || 'Failed to perform search');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setResults(data.results || []);
+      setSearchTime(data.searchTime || (Date.now() - startTime) / 1000);
+      setTotalResults(data.totalResults || 0);
       
       toast({
         title: "Search Complete",
-        description: `Found ${mockResults.length} results in ${((Date.now() - startTime) / 1000).toFixed(2)} seconds`
+        description: `Found ${data.results?.length || 0} results in ${data.searchTime || ((Date.now() - startTime) / 1000).toFixed(2)} seconds`
       });
       
     } catch (error) {
+      console.error('Search error:', error);
       toast({
         title: "Search Error",
-        description: "Unable to perform search. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to perform search. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -85,7 +78,7 @@ const InternetSearch: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Globe className="h-5 w-5 text-blue-600" />
-            <span>Internet Search</span>
+            <span>Real Internet Search</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -112,10 +105,10 @@ const InternetSearch: React.FC = () => {
           
           {results.length > 0 && (
             <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-              <span>About {results.length} results</span>
+              <span>About {totalResults.toLocaleString()} results ({results.length} shown)</span>
               <div className="flex items-center space-x-1">
                 <Clock className="h-4 w-4" />
-                <span>({(searchTime / 1000).toFixed(2)} seconds)</span>
+                <span>({searchTime.toFixed(2)} seconds)</span>
               </div>
             </div>
           )}
@@ -136,7 +129,10 @@ const InternetSearch: React.FC = () => {
                           {result.displayUrl}
                         </Badge>
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
+                      <h3 
+                        className="text-lg font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+                        onClick={() => window.open(result.url, '_blank')}
+                      >
                         {result.title}
                       </h3>
                       <p className="text-gray-700 leading-relaxed">
@@ -146,7 +142,7 @@ const InternetSearch: React.FC = () => {
                     <div className="flex items-center space-x-2 ml-4">
                       <Star className="h-4 w-4 text-yellow-500" />
                       <span className="text-sm text-gray-600">
-                        {(Math.random() * 0.3 + 0.7).toFixed(1)}
+                        Rank #{index + 1}
                       </span>
                     </div>
                   </div>
@@ -162,7 +158,7 @@ const InternetSearch: React.FC = () => {
                       <span>Visit Site</span>
                     </Button>
                     <div className="text-xs text-gray-500">
-                      Rank #{index + 1}
+                      Real search result
                     </div>
                   </div>
                 </div>
