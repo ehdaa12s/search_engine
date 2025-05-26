@@ -27,10 +27,10 @@ const FileSimilarity: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
       toast({
         title: "File too large",
-        description: "Please upload a file smaller than 10MB.",
+        description: "Please upload a file smaller than 50MB.",
         variant: "destructive"
       });
       return;
@@ -41,25 +41,44 @@ const FileSimilarity: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      setFileContent(content);
+      // For binary files, we'll use the filename and file type as content
+      if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        setFileContent(content);
+      } else {
+        // For non-text files, create a content description based on file metadata
+        const metadata = `File: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(1)} KB`;
+        setFileContent(metadata);
+      }
     };
     
-    if (file.type.startsWith('text/') || file.name.endsWith('.txt')) {
-      reader.readAsText(file);
-    } else {
+    reader.onerror = () => {
       toast({
-        title: "Unsupported file type",
-        description: "Please upload a text file (.txt).",
+        title: "Error reading file",
+        description: "There was an error reading the file. Please try again.",
         variant: "destructive"
       });
+    };
+
+    // Handle different file types
+    if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+      reader.readAsText(file);
+    } else {
+      // For binary files, we'll analyze based on file metadata
+      const metadata = `File: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(1)} KB`;
+      setFileContent(metadata);
     }
+
+    toast({
+      title: "File uploaded successfully",
+      description: `${file.name} is ready for analysis.`
+    });
   };
 
   const findSimilarContent = async () => {
-    if (!fileContent.trim()) {
+    if (!uploadedFile) {
       toast({
-        title: "No content to analyze",
-        description: "Please upload a file with content first.",
+        title: "No file to analyze",
+        description: "Please upload a file first.",
         variant: "destructive"
       });
       return;
@@ -72,7 +91,7 @@ const FileSimilarity: React.FC = () => {
     // Simulate analysis process
     const steps = [
       "Analyzing file content...",
-      "Extracting key terms...",
+      "Extracting key features...",
       "Searching internet sources...",
       "Calculating similarity scores...",
       "Ranking results..."
@@ -83,42 +102,43 @@ const FileSimilarity: React.FC = () => {
       setProgress(((i + 1) / steps.length) * 100);
     }
 
-    // Generate mock similar content
+    // Generate mock similar content based on file type
+    const fileType = uploadedFile.type || uploadedFile.name.split('.').pop() || 'unknown';
     const mockResults: SimilarContent[] = [
       {
-        title: "Academic Paper: Similar Research Findings",
-        url: "https://arxiv.org/abs/example1",
+        title: `Similar ${fileType} document found`,
+        url: "https://example.com/similar-doc",
         similarity: 0.89,
-        snippet: "This academic paper discusses similar concepts and methodologies as found in your uploaded document. The research approach and conclusions show significant overlap...",
+        snippet: `This document contains similar content and structure to your uploaded ${uploadedFile.name} file. The analysis shows significant overlap in key features and patterns...`,
         source: 'academic'
       },
       {
-        title: "Wikipedia Article on Related Topic",
-        url: "https://en.wikipedia.org/wiki/related-topic",
+        title: "Related content repository",
+        url: "https://github.com/related-content",
         similarity: 0.76,
-        snippet: "Comprehensive overview of the topic covered in your document. Contains detailed explanations and references that complement your content...",
+        snippet: `Open source repository containing files similar to your upload. Includes comparable file formats and content structures...`,
         source: 'web'
       },
       {
-        title: "Recent News Article",
-        url: "https://news.example.com/related-news",
+        title: "Industry standard documentation",
+        url: "https://standards.example.com/docs",
         similarity: 0.72,
-        snippet: "Breaking news coverage of developments in the field discussed in your document. Provides current context and real-world applications...",
-        source: 'news'
-      },
-      {
-        title: "Industry Blog Post",
-        url: "https://blog.example.com/industry-insights",
-        similarity: 0.68,
-        snippet: "Expert insights and practical applications related to your document's content. Offers industry perspective and best practices...",
+        snippet: `Official documentation and examples related to your file type. Provides context and best practices for similar content...`,
         source: 'web'
       },
       {
-        title: "Research Database Entry",
-        url: "https://research.example.com/database-entry",
-        similarity: 0.64,
-        snippet: "Detailed research data and analysis that supports and extends the concepts in your uploaded document...",
+        title: "Research paper on file analysis",
+        url: "https://arxiv.org/abs/example-analysis",
+        similarity: 0.68,
+        snippet: `Academic research covering analysis techniques for files like yours. Includes methodologies and comparative studies...`,
         source: 'academic'
+      },
+      {
+        title: "Recent developments in the field",
+        url: "https://news.example.com/field-updates",
+        similarity: 0.64,
+        snippet: `Latest news and updates related to your file's domain. Coverage of new tools and techniques for handling similar content...`,
+        source: 'news'
       }
     ];
 
@@ -127,7 +147,7 @@ const FileSimilarity: React.FC = () => {
 
     toast({
       title: "Analysis Complete",
-      description: `Found ${mockResults.length} similar pieces of content on the internet.`
+      description: `Found ${mockResults.length} similar pieces of content for ${uploadedFile.name}.`
     });
   };
 
@@ -138,6 +158,18 @@ const FileSimilarity: React.FC = () => {
       case 'web': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getFileTypeIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return '🖼️';
+    if (file.type.startsWith('video/')) return '🎥';
+    if (file.type.startsWith('audio/')) return '🎵';
+    if (file.type.includes('pdf')) return '📄';
+    if (file.type.includes('word') || file.name.endsWith('.docx')) return '📝';
+    if (file.type.includes('excel') || file.name.endsWith('.xlsx')) return '📊';
+    if (file.type.includes('powerpoint') || file.name.endsWith('.pptx')) return '📈';
+    if (file.type.startsWith('text/')) return '📄';
+    return '📁';
   };
 
   return (
@@ -154,7 +186,7 @@ const FileSimilarity: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload File for Analysis
+                Upload Any File for Analysis
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -163,12 +195,11 @@ const FileSimilarity: React.FC = () => {
                     Drop your file here or click to upload
                   </p>
                   <p className="text-sm text-gray-500">
-                    Supports text files up to 10MB
+                    Supports all file types up to 50MB (documents, images, videos, etc.)
                   </p>
                 </div>
                 <input
                   type="file"
-                  accept=".txt,text/plain"
                   onChange={handleFileUpload}
                   className="hidden"
                   id="similarity-file-upload"
@@ -187,15 +218,19 @@ const FileSimilarity: React.FC = () => {
             {uploadedFile && (
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-800">{uploadedFile.name}</span>
-                  <Badge variant="secondary">
-                    {(uploadedFile.size / 1024).toFixed(1)} KB
-                  </Badge>
+                  <span className="text-2xl">{getFileTypeIcon(uploadedFile)}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-blue-800">{uploadedFile.name}</span>
+                      <Badge variant="secondary">
+                        {(uploadedFile.size / 1024).toFixed(1)} KB
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-blue-600">
+                      Type: {uploadedFile.type || 'Unknown'} • Ready for analysis
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-blue-600 mt-2">
-                  Content loaded: {fileContent.length} characters
-                </p>
               </div>
             )}
           </div>
@@ -203,7 +238,7 @@ const FileSimilarity: React.FC = () => {
           {/* Analyze Button */}
           <Button
             onClick={findSimilarContent}
-            disabled={!fileContent.trim() || isAnalyzing}
+            disabled={!uploadedFile || isAnalyzing}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             {isAnalyzing ? (
