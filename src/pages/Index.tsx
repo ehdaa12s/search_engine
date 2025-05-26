@@ -13,7 +13,7 @@ import InternetSearch from '@/components/InternetSearch';
 import FileSimilarity from '@/components/FileSimilarity';
 import { searchDocuments, addDocument, getCorpusStats } from '@/utils/searchEngine';
 
-const Index = () => {
+const Index: React.FC = () => {
   const [query, setQuery] = useState('');
   const [documents, setDocuments] = useState<Array<{id: string, title: string, content: string}>>([]);
   const [searchResults, setSearchResults] = useState<Array<{id: string, title: string, content: string, score: number}>>([]);
@@ -94,88 +94,90 @@ const Index = () => {
         </div>
 
         {/* Search Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="local" className="flex items-center space-x-2">
-              <FileText className="h-4 w-4" />
-              <span>Local Search</span>
-            </TabsTrigger>
-            <TabsTrigger value="internet" className="flex items-center space-x-2">
-              <Globe className="h-4 w-4" />
-              <span>Internet Search</span>
-            </TabsTrigger>
-            <TabsTrigger value="crawler" className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <span>Web Crawler</span>
-            </TabsTrigger>
-            <TabsTrigger value="similarity" className="flex items-center space-x-2">
-              <Upload className="h-4 w-4" />
-              <span>File Similarity</span>
-            </TabsTrigger>
-          </TabsList>
+        <div className="mb-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsTrigger value="local" className="flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Local Search</span>
+              </TabsTrigger>
+              <TabsTrigger value="internet" className="flex items-center space-x-2">
+                <Globe className="h-4 w-4" />
+                <span>Internet Search</span>
+              </TabsTrigger>
+              <TabsTrigger value="crawler" className="flex items-center space-x-2">
+                <Search className="h-4 w-4" />
+                <span>Web Crawler</span>
+              </TabsTrigger>
+              <TabsTrigger value="similarity" className="flex items-center space-x-2">
+                <Upload className="h-4 w-4" />
+                <span>File Similarity</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="local">
-            <div className="space-y-6">
-              {/* Local Search */}
-              <Card className="border-0 shadow-lg bg-white/60 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="max-w-2xl mx-auto relative">
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <Input
-                        type="text"
-                        placeholder="Search your uploaded documents..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        className="pl-12 pr-32 py-4 text-lg border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-full"
-                      />
-                      <Button
-                        onClick={handleSearch}
-                        disabled={!query.trim() || documents.length === 0 || isSearching}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600"
-                      >
-                        {isSearching ? 'Searching...' : 'Search'}
-                      </Button>
+            <TabsContent value="local">
+              <div className="space-y-6">
+                {/* Local Search */}
+                <Card className="border-0 shadow-lg bg-white/60 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="max-w-2xl mx-auto relative">
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <Input
+                          type="text"
+                          placeholder="Search your uploaded documents..."
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          className="pl-12 pr-32 py-4 text-lg border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-full"
+                        />
+                        <Button
+                          onClick={handleSearch}
+                          disabled={!query.trim() || documents.length === 0 || isSearching}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600"
+                        >
+                          {isSearching ? 'Searching...' : 'Search'}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Document Upload */}
-              <Card className="border-0 shadow-lg bg-white/60 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <DocumentUpload onUpload={handleDocumentUpload} />
-                </CardContent>
-              </Card>
+                {/* Document Upload */}
+                <Card className="border-0 shadow-lg bg-white/60 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <DocumentUpload onUpload={handleDocumentUpload} />
+                  </CardContent>
+                </Card>
 
-              {/* Results */}
-              {searchResults.length > 0 && (
-                <SearchResults results={searchResults} query={query} />
-              )}
+                {/* Results */}
+                {searchResults.length > 0 && (
+                  <SearchResults results={searchResults} query={query} />
+                )}
 
-              {searchResults.length > 0 && documents.length > 0 && (
-                <SearchStats 
-                  query={query}
-                  results={searchResults}
-                  totalDocuments={documents.length}
-                />
-              )}
-            </div>
-          </TabsContent>
+                {searchResults.length > 0 && documents.length > 0 && (
+                  <SearchStats 
+                    query={query}
+                    results={searchResults}
+                    totalDocuments={documents.length}
+                  />
+                )}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="internet">
-            <InternetSearch />
-          </TabsContent>
+            <TabsContent value="internet">
+              <InternetSearch />
+            </TabsContent>
 
-          <TabsContent value="crawler">
-            <WebCrawler onDocumentsFound={setDocuments} />
-          </TabsContent>
+            <TabsContent value="crawler">
+              <WebCrawler onDocumentsFound={setDocuments} />
+            </TabsContent>
 
-          <TabsContent value="similarity">
-            <FileSimilarity />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="similarity">
+              <FileSimilarity />
+            </TabsContent>
+          </Tabs>
+        </div>
 
         {/* Stats Section */}
         {documents.length > 0 && (
